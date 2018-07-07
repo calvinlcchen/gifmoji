@@ -1,8 +1,12 @@
+// todo: only read left-click (not right click)
+// or just use spacebar?
+
 var nEmojisToUse = 1000; // max: 900 (ignores values larger)
 var stepSize = 8; // size of rendered emoji
 var pixelStepSize = 1; // step size over pixels in emojis
+var saveEveryKFrames = 3; // number of frames to skip in gifs
 
-var widthMult = 0.5;
+var widthMult = 0.4;
 var backgroundColor = 50;
 var emojiSize = 32;
 var emojisPerRow = 30;
@@ -12,45 +16,42 @@ var emojiMeanColors; // array of mean color values for all emojis
 
 var recording = false;
 var gif;
+var nGifFrames = 0;
+var maxGifFrames = 15;
 
 var canvas;
 var canvasWidth;
 var canvasHeight;
-var cap;
-var curPatch;
+var capture;
 var curCapture;
 var emojiIndex;
-var emojiIndices = [];
-var cxs = [];
-var cys = [];
-var curMeanClrs = [];
 
 function preload() {
   emojis = loadImage("static/emojis.png");
 }
 
 function windowResized() {
-  canvasWidth = widthMult*windowWidth;
+  canvasWidth = Math.round(widthMult*windowWidth);
   canvasHeight = Math.round((canvasWidth/2)/1.3333);
   resizeCanvas(canvasWidth, canvasHeight);
-  // cap.size(canvasWidth/2, canvasHeight);
+  // capture.size(canvasWidth/2, canvasHeight);
 }
 
 function setup() {
-  canvasWidth = widthMult*windowWidth;
+  canvasWidth = Math.round(widthMult*windowWidth);
   canvasHeight = Math.round((canvasWidth/2)/1.3333);
   canvas = createCanvas(canvasWidth, canvasHeight);
   canvas.parent('sketch-holder');
-  cap = createCapture(VIDEO);
-  cap.hide();
-  cap.size(canvasWidth/2, canvasHeight);
+  capture = createCapture(VIDEO);
+  capture.hide();
+  capture.size(canvasWidth/2, canvasHeight);
   rectMode(CENTER);
   noStroke();  
   emojiMeanColors = loadEmojiMeanColors(emojis);
   if (nEmojisToUse > emojiMeanColors.length) {
     emojiMeanColors = emojiMeanColors.slice(0, nEmojisToUse);
   }
-  text('click to start gifmoji, then click again to stop', canvasWidth/4, canvasHeight/2);
+  $('.recording-status').html('Click to start recording a gifmoji.');
   setupGif();
 }
 
@@ -65,46 +66,57 @@ function setupGif() {
 
   gif.on('finished', function(blob) {
     // add created image to html
-    $('#gif-holder').attr("src", URL.createObjectURL(blob));
+
+    newimg = "<img id='gif-holder' src='" + URL.createObjectURL(blob) + "'></img>";
+    $('#gif-container').append(newimg);
+    // $('#gif-holder').attr("src", URL.createObjectURL(blob));
     // set width to canvas width
-    $('#gif-holder').css("width", $('#sketch-holder').css("width"));
+    // $('#gif-holder').css("width", $('#sketch-holder').css("width")/2);
+    // $('#gif-holder').css("width", canvasWidth);
+    $('.recording-status').html('Right-click on the gif to save. Or click to make a new one.');
     setupGif();
   });
 }
 
-function saveImage() {
-  saveCanvas(canvas, 'gifmoji', 'png');
+function stopRecording() {
+  recording = false;
+  console.log('rendering');
+  $('.recording-status').html('Calling gifmoji...');
+  gif.render();
 }
 
 function mousePressed() {
-  recording = !recording;
-  if (!recording) {
-    console.log('rendering');
-    gif.render();
+  if (recording) {
+    stopRecording();
   } else {
+    nGifFrames = 0;
+    recording = true;
     console.log('recording');
+    $('.recording-status').html('Recording! Click to stop.');
   }
 }
 
 function draw() {
   gifmojify();
-  image(cap, canvas.width/2, 0);
-  if (recording && frameCount % 3 == 0) {
+  image(capture, canvas.width/2, 0);
+  if (recording && frameCount % saveEveryKFrames == 0) {
+    nGifFrames += 1;
     gif.addFrame(canvas.elt, {delay: 1, copy: true});
+    if (nGifFrames > maxGifFrames) { stopRecording(); }
   }
 }
 
 function gifmojify() {
   background(backgroundColor);
-  // captureToEmojis(cap, stepSize);
+  // captureToEmojis(capture, stepSize);
 
   // surprisingly, this is faster than operating on cap
-  curCapture = createImage(cap.width, cap.height);
+  curCapture = createImage(capture.width, capture.height);
   if (curCapture.width > 0) {
     curCapture.loadPixels();
-    cap.loadPixels();
+    capture.loadPixels();
     for (var i = 0; i < curCapture.pixels.length; i += 1) {
-      curCapture.pixels[i] = cap.pixels[i];
+      curCapture.pixels[i] = capture.pixels[i];
     }
     curCapture.updatePixels();
     captureToEmojis(curCapture, stepSize);    

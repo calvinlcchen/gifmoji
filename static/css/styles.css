@@ -20,6 +20,16 @@ body {
     justify-content: center;
 }
 
+#gif-container {
+    /*display: flex;*/
+    justify-content: center;
+}
+
+#gif-holder {
+    width: 30%;
+    height: 30%;
+}
+
 .navbar {
     /*background: white;*/
     font-weight: bold;
