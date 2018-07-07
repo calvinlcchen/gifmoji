@@ -45,6 +45,7 @@ function setup() {
   capture = createCapture(VIDEO);
   capture.hide();
   capture.size(canvasWidth/2, canvasHeight);
+  capture.elt.setAttribute('playsinline', ''); // for mobile
   rectMode(CENTER);
   noStroke();  
   emojiMeanColors = loadEmojiMeanColors(emojis);
