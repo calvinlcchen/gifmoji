@@ -77,13 +77,6 @@ function saveImage() {
 }
 
 function mousePressed() {
-  // if (showEmojis) {
-  //   showEmojis = false;
-  //   console.log('switch to live mode');
-  // } else {
-  //   showEmojis = true;
-  //   console.log('switch to still mode');
-  // }
   recording = !recording;
   if (!recording) {
     console.log('rendering');
@@ -94,17 +87,8 @@ function mousePressed() {
 }
 
 function draw() {
-  if (showEmojis) {
-  } else {
-    // gifmojify();
-    // image(cap, 0, 0);
-    // text('(press right arrow to gifmojify)', cap.width/2, cap.height/2);
-  }
-  // image(cap, 0, 0);
-  // if (recording) { gifmojify(); }
   gifmojify();
   image(cap, canvas.width/2, 0);
-
   if (recording && frameCount % 3 == 0) {
     gif.addFrame(canvas.elt, {delay: 1, copy: true});
   }
@@ -127,23 +111,7 @@ function gifmojify() {
   }
 }
 
-// function captureToEmojis0(curCap, stepSize) {
-//   for (var cy = 0; cy < curCap.height; cy += stepSize) {
-//     for (var cx = 0; cx < curCap.width; cx += stepSize) {
-//       curPatch = curCap.get(cx, cy, stepSize, stepSize);
-//       if (curPatch.width > 0) {
-//         curPatch.loadPixels();
-//         emojiIndex = findIndexOfClosestMean(avgColorInImage(curPatch),
-//             emojiMeanColors);
-//         updateBlockWithEmoji(cx, cy,
-//           emojiIndex, emojis);
-//       }
-//     }
-//   }
-// }
-
 function captureToEmojis(curCap, stepSize) {
-  // emojiIndex = 1;
   curCap.loadPixels();
   for (var cy = 0; cy < curCap.height; cy += stepSize) {
     for (var cx = 0; cx < curCap.width; cx += stepSize) {
@@ -219,7 +187,7 @@ function loadEmojiMeanColors(emojis) {
   for (var cy = 0; cy < emojis.height; cy += emojiSize) {
     for (var cx = 0; cx < emojis.width; cx += emojiSize) {
       curEmoji = emojis.get(cx, cy, emojiSize, emojiSize);
-      append(emojiMeans, avgColorInImage(curEmoji));
+      emojiMeans.push(avgColorInImage(curEmoji));
     }
   }
   return emojiMeans;
@@ -256,15 +224,4 @@ function findIndexOfClosestMean(mu, mus) {
 
 function distBetweenColors(a, b) {
   return dist(a.levels[0], a.levels[1], a.levels[2], b.levels[0], b.levels[1], b.levels[2]);
-}
-
-function updateBlockWithEmoji(cx, cy, emoji_index, emojis) {
-  // https://p5js.org/reference/#/p5/image
-
-  erow = Math.floor(emoji_index/emojisPerRow);
-  ecol = emoji_index % emojisPerRow;
-  px = ecol*emojiSize;
-  py = erow*emojiSize;
-  image(emojis, cx, cy, stepSize, stepSize, px, py, emojiSize, emojiSize);
-
 }
