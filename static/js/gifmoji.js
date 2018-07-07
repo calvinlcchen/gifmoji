@@ -61,7 +61,7 @@ function setupGif() {
   gif = new GIF({
     workers: 2,
     quality: 40,
-    workerScript: "/static/js/gif.worker.js"
+    workerScript: "static/js/gif.worker.js"
   });
 
   gif.on('finished', function(blob) {
