@@ -1,7 +1,6 @@
-
 var nEmojisToUse = 1000; // max: 900 (ignores values larger)
-var stepSize = 16; // size of rendered emoji
-var pixelStepSize = 1; // step size over pixels
+var stepSize = 8; // size of rendered emoji
+var pixelStepSize = 1; // step size over pixels in emojis
 
 var widthMult = 0.5;
 var backgroundColor = 50;
@@ -102,7 +101,8 @@ function draw() {
     // text('(press right arrow to gifmojify)', cap.width/2, cap.height/2);
   }
   // image(cap, 0, 0);
-  if (recording) { gifmojify(); }
+  // if (recording) { gifmojify(); }
+  gifmojify();
   image(cap, canvas.width/2, 0);
 
   if (recording && frameCount % 3 == 0) {
@@ -113,6 +113,8 @@ function draw() {
 function gifmojify() {
   background(backgroundColor);
   // captureToEmojis(cap, stepSize);
+
+  // surprisingly, this is faster than operating on cap
   curCapture = createImage(cap.width, cap.height);
   if (curCapture.width > 0) {
     curCapture.loadPixels();
@@ -121,23 +123,91 @@ function gifmojify() {
       curCapture.pixels[i] = cap.pixels[i];
     }
     curCapture.updatePixels();
-    captureToEmojis(curCapture, stepSize);
+    captureToEmojis(curCapture, stepSize);    
   }
 }
 
+// function captureToEmojis0(curCap, stepSize) {
+//   for (var cy = 0; cy < curCap.height; cy += stepSize) {
+//     for (var cx = 0; cx < curCap.width; cx += stepSize) {
+//       curPatch = curCap.get(cx, cy, stepSize, stepSize);
+//       if (curPatch.width > 0) {
+//         curPatch.loadPixels();
+//         emojiIndex = findIndexOfClosestMean(avgColorInImage(curPatch),
+//             emojiMeanColors);
+//         updateBlockWithEmoji(cx, cy,
+//           emojiIndex, emojis);
+//       }
+//     }
+//   }
+// }
+
 function captureToEmojis(curCap, stepSize) {
-  // var cty = random(0, stepSize*Math.floor(cap.height/stepSize));
-  // var ctx = random(0, stepSize*Math.floor(cap.width/stepSize));
+  // emojiIndex = 1;
+  curCap.loadPixels();
   for (var cy = 0; cy < curCap.height; cy += stepSize) {
     for (var cx = 0; cx < curCap.width; cx += stepSize) {
-      curPatch = curCap.get(cx, cy, stepSize, stepSize);
-      if (curPatch.width > 0) {
-        curPatch.loadPixels();
-        emojiIndex = findIndexOfClosestMean(avgColorInImage(curPatch),
-            emojiMeanColors);
-        updateBlockWithEmoji(cx, cy,
-          emojiIndex, emojis);
-      }
+      curMeanClr = avgColorOfCurPatch(curCap, cx, cy, stepSize);
+      emojiIndex = findIndexOfClosestMean(curMeanClr, emojiMeanColors);
+      updatePatchWithEmoji(curCap, cx, cy, stepSize, emojiIndex);
+    }
+  }
+  curCap.updatePixels();
+  image(curCap, 0, 0);
+}
+
+function avgColorOfCurPatch(curCap, cx, cy, stepSize) {
+  var r = 0, g = 0, b = 0, a = 0, n = 0;
+
+  var i, c, ci, px, py;
+  for (var ix = 0; ix < stepSize; ix += 1) {
+    for (var iy = 0; iy < stepSize; iy += 1) {
+      px = cx + ix;
+      py = cy + iy;
+
+      c = px + (py-1)*curCap.width;
+      i = 4*c;
+      if (i+3 >= curCap.pixels.length) { continue; }
+      if (isNaN(curCap.pixels[i])) { continue; }
+      r += curCap.pixels[i];
+      g += curCap.pixels[i+1];
+      b += curCap.pixels[i+2];
+      a += curCap.pixels[i+3];
+      n += 1;
+    }
+  }
+  if (n > 0) {
+    var clr = color(r/n, g/n, b/n, a/n);
+  } else {
+    var clr = color(0, 0, 0, 0);
+  }
+  return clr;
+}
+
+function updatePatchWithEmoji(curCap, cx, cy, stepSize, emojiIndex) {
+  erow = Math.floor(emojiIndex/emojisPerRow);
+  ecol = emojiIndex % emojisPerRow;
+  var ex = ecol*emojiSize;
+  var ey = erow*emojiSize;
+
+  var i, c, e, ci, px, py;
+  for (var ix = 0; ix < stepSize; ix += 1) {
+    for (var iy = 0; iy < stepSize; iy += 1) {
+      px = cx + ix;
+      py = cy + iy;
+
+      c = px + (py-1)*curCap.width;
+      i = 4*c;
+      if (i+3 >= curCap.pixels.length) { continue; }
+      if (isNaN(curCap.pixels[i])) { continue; }
+
+      epx = ex + (emojiSize/stepSize)*ix;
+      epy = ey + (emojiSize/stepSize)*iy;
+      e = 4*(epx + (epy-1)*emojis.width);
+      curCap.pixels[i] = emojis.pixels[e];
+      curCap.pixels[i+1] = emojis.pixels[e+1];
+      curCap.pixels[i+2] = emojis.pixels[e+2];
+      curCap.pixels[i+3] = emojis.pixels[e+3];
     }
   }
 }
@@ -158,7 +228,7 @@ function loadEmojiMeanColors(emojis) {
 function avgColorInImage(img){
   img.loadPixels();
   var r = 0, g = 0, b = 0, a = 0;
-  for (var c = 0; c < img.pixels.length-3; c += 4*pixelStepSize) {
+  for (var c = 0; c < img.pixels.length-3; c += 4) {
     r += img.pixels[c];
     g += img.pixels[c+1];
     b += img.pixels[c+2];
