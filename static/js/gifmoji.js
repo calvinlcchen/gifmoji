@@ -16,6 +16,7 @@ var gif;
 var recording = false;
 var nGifFrames = 0;
 var maxGifFrames = 15; // longest possible gif
+var saveRawImageAndGifmoji = false;
 
 var infile;
 var canvas;
@@ -117,11 +118,18 @@ function clickedButton() {
 }
 
 function draw() {
+  if (typeof curCapture === "undefined") {
+    curCapture = createImage(capture.width, capture.height);
+  }
   gifmojify();
   image(capture, canvas.width/2, 0);
   if (recording && frameCount % saveEveryKFrames == 0) {
     nGifFrames += 1;
-    gif.addFrame(canvas.elt, {delay: 1, copy: true});
+    if (saveRawImageAndGifmoji) {
+      gif.addFrame(canvas.elt, {delay: 1, copy: true});
+    } else {
+      gif.addFrame(curCapture.canvas, {delay: 1, copy: true});
+    }
     if (nGifFrames > maxGifFrames) { stopRecording(); }
   }
 }
