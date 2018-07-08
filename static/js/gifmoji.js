@@ -1,64 +1,82 @@
-// todo: only read left-click (not right click)
-// or just use spacebar?
+// todos:
+// - do not assume same webcam proportions
 
 var nEmojisToUse = 1000; // max: 900 (ignores values larger)
 var stepSize = 8; // size of rendered emoji
-var pixelStepSize = 1; // step size over pixels in emojis
 var saveEveryKFrames = 3; // number of frames to skip in gifs
 
-var widthMult = 0.4;
-var backgroundColor = 50;
-var emojiSize = 32;
-var emojisPerRow = 30;
-var showEmojis = false;
+var widthMult = 0.5; // proportion of screen to use
+var backgroundColor = '#444';//50;
+var emojiSize; // determined by stepSize
+var emojisPerRow = 30; // in source file
 var emojis; // image of all 32x32 emojis
 var emojiMeanColors; // array of mean color values for all emojis
 
-var recording = false;
 var gif;
+var recording = false;
 var nGifFrames = 0;
-var maxGifFrames = 15;
+var maxGifFrames = 15; // longest possible gif
 
+var infile;
 var canvas;
 var canvasWidth;
 var canvasHeight;
 var capture;
 var curCapture;
+var captureRatio = 0.75;
 var emojiIndex;
 
 function preload() {
-  emojis = loadImage("static/emojis.png");
+  if (stepSize == 8) {
+    infile = "static/emojis/emojis_8.png";
+    emojiSize = 8;
+  } else if (stepSize == 16) {
+    infile = "static/emojis/emojis_16.png";
+    emojiSize = 16;
+  } else {
+    infile = "static/emojis/emojis_32.png";
+    emojiSize = 32;
+  }
+  emojis = loadImage(infile);
 }
 
 function windowResized() {
-  canvasWidth = Math.round(widthMult*windowWidth);
+  canvasWidth = Math.max(Math.round(widthMult*windowWidth), 400);
   canvasHeight = Math.round((canvasWidth/2)/1.3333);
   resizeCanvas(canvasWidth, canvasHeight);
   // capture.size(canvasWidth/2, canvasHeight);
 }
 
 function setup() {
-  canvasWidth = Math.round(widthMult*windowWidth);
+  // init canvas
+  canvasWidth = Math.max(Math.round(widthMult*windowWidth), 400);
   canvasHeight = Math.round((canvasWidth/2)/1.3333);
   canvas = createCanvas(canvasWidth, canvasHeight);
   canvas.parent('sketch-holder');
+
+  // init webcam
   capture = createCapture(VIDEO);
   capture.hide();
-  capture.size(canvasWidth/2, canvasHeight);
+  capture.size(canvasWidth/2, captureRatio*canvasWidth/2);
   capture.elt.setAttribute('playsinline', ''); // for mobile
   rectMode(CENTER);
-  noStroke();  
+  noStroke();
+
+  // compute average color in each emoji (used for matching)
   emojiMeanColors = loadEmojiMeanColors(emojis);
   if (nEmojisToUse > emojiMeanColors.length) {
     emojiMeanColors = emojiMeanColors.slice(0, nEmojisToUse);
   }
-  $('.recording-status').html('Click to start recording a gifmoji.');
+  
+  // handle record button being pressed
+  $('.recording-status').html('Record');
+  $('.recording-status').click(clickedButton);
   setupGif();
 }
 
 function setupGif() {
-  // https://gist.github.com/antiboredom/129fd2311dec0046603e
-  // https://github.com/jnordberg/gif.js
+  // src: https://gist.github.com/antiboredom/129fd2311dec0046603e
+  // lib: https://github.com/jnordberg/gif.js
   gif = new GIF({
     workers: 2,
     quality: 40,
@@ -67,14 +85,11 @@ function setupGif() {
 
   gif.on('finished', function(blob) {
     // add created image to html
-
     newimg = "<img id='gif-holder' src='" + URL.createObjectURL(blob) + "'></img>";
     $('#gif-container').append(newimg);
-    // $('#gif-holder').attr("src", URL.createObjectURL(blob));
-    // set width to canvas width
-    // $('#gif-holder').css("width", $('#sketch-holder').css("width")/2);
-    // $('#gif-holder').css("width", canvasWidth);
-    $('.recording-status').html('Right-click on the gif to save. Or click to make a new one.');
+    $('.recording-status').html('Record');
+    $('.recording-status').removeClass('btn-light');
+    $('.recording-status').addClass('btn-success');
     setupGif();
   });
 }
@@ -82,18 +97,22 @@ function setupGif() {
 function stopRecording() {
   recording = false;
   console.log('rendering');
-  $('.recording-status').html('Calling gifmoji...');
+  $('.recording-status').html('Running...');
   gif.render();
+  $('.recording-status').removeClass('btn-danger');
+  $('.recording-status').addClass('btn-light');
 }
 
-function mousePressed() {
+function clickedButton() {
   if (recording) {
     stopRecording();
   } else {
     nGifFrames = 0;
     recording = true;
     console.log('recording');
-    $('.recording-status').html('Recording! Click to stop.');
+    $('.recording-status').html('Finish');
+    $('.recording-status').removeClass('btn-success');
+    $('.recording-status').addClass('btn-danger');
   }
 }
 
@@ -182,8 +201,8 @@ function updatePatchWithEmoji(curCap, cx, cy, stepSize, emojiIndex) {
       if (i+3 >= curCap.pixels.length) { continue; }
       if (isNaN(curCap.pixels[i])) { continue; }
 
-      epx = ex + (emojiSize/stepSize)*ix;
-      epy = ey + (emojiSize/stepSize)*iy;
+      epx = ex + ix;
+      epy = ey + iy;
       e = 4*(epx + (epy-1)*emojis.width);
       curCap.pixels[i] = emojis.pixels[e];
       curCap.pixels[i+1] = emojis.pixels[e+1];
