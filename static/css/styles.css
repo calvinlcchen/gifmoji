@@ -27,13 +27,27 @@ body {
 }
 
 #gif-container {
-    /*display: flex;*/
     justify-content: center;
+    text-align: center;
 }
 
-#gif-holder {
-    width: 30%;
-    height: 30%;
+.gif-holder {
+    width: 20%;
+    height: 20%;
+}
+
+.btn-group {
+    margin-right: 1em;
+    margin-bottom: 1em;
+}
+
+.btn-slider {
+    background-color: gray;
+    color: white;
+}
+
+.slider-container {
+    width: 5em;
 }
 
 .navbar {
