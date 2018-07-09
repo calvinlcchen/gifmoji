@@ -10,7 +10,7 @@ var backgroundColor = '#444';//50;
 var emojiSize; // determined by stepSize
 var emojisPerRow = 30; // in source file
 var emojis; // image of all 32x32 emojis
-var emojis_8, emojis_16, emojis_32;
+var emojis_8, emojis_12, emojis_16, emojis_32;
 var emojiMeanColors; // array of mean color values for all emojis
 
 var gif;
@@ -33,26 +33,32 @@ function preload() {
   canvasWidth = Math.max(Math.round(widthMult*windowWidth), 400);
 
   emojis_8 = loadImage("static/emojis/emojis_8.png");
+  emojis_12 = loadImage("static/emojis/emojis_12.png");
   emojis_16 = loadImage("static/emojis/emojis_16.png");
   emojis_32 = loadImage("static/emojis/emojis_32.png");
 
-  if (canvasWidth < 600) {
+  if (canvasWidth < 450) {
     infile = "static/emojis/emojis_8.png";
     emojiSize = 8;
     stepSize = 8;
     emojis = emojis_8;
     $('#slider-scale').val(1);
-  } else if (canvasWidth >= 600 & canvasWidth <= 900) {
+  } else if (canvasWidth >= 450 & canvasWidth < 700) {
+    emojiSize = 12;
+    stepSize = 12;
+    emojis = emojis_12;
+    $('#slider-scale').val(2);
+  } else if (canvasWidth >= 700 & canvasWidth <= 900) {
     emojiSize = 16;
     stepSize = 16;
     emojis = emojis_16;
-    $('#slider-scale').val(2);
+    $('#slider-scale').val(3);
   } else {
     infile = "static/emojis/emojis_32.png";
     emojiSize = 32;
     stepSize = 32;
     emojis = emojis_32;
-    $('#slider-scale').val(3);
+    $('#slider-scale').val(4);
   }
   // $('#size-status').html(stepSize.toString() + " " + canvasWidth.toString());
   $('#slider-scale').on('input', function () {
@@ -72,6 +78,10 @@ function changeStepSize(val) {
     stepSize = 8;
     emojis = emojis_8;    
   } else if (val == 2) {
+    emojiSize = 12;
+    stepSize = 12;
+    emojis = emojis_12;
+  } else if (val == 3) {
     emojiSize = 16;
     stepSize = 16;
     emojis = emojis_16;
